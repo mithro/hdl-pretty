@@ -1,0 +1,31 @@
+#! /bin/sh
+":"; exec emacs --no-site-file --script "$0" -- "$0" "$@" # -*-emacs-lisp-*-
+
+(setq arg0 (file-truename (car (cdr argv))))
+(setq args (cdr (cdr argv)))
+(setq argv nil)
+
+;(defun set-args arg
+; "Takes an arg of form --xxxx=blah and converts it to a '(setq xxx blah)'"
+;(mapc 'set-args args)
+
+(setq basedir (concat (file-name-directory arg0) "vhdl-mode"))
+(setq load-path (cons basedir load-path))
+
+(defun insert-standard-input ()
+  "insert contents from standard input"
+  (condition-case nil
+      (let (line) 
+        (while (setq line (read-from-minibuffer ""))
+          (insert line "\n")))
+    (error nil)))
+
+(insert-standard-input)
+(goto-char (point-min))
+
+(load-library "vhdl-mode")
+(vhdl-set-style "IEEE")
+(vhdl-mode)
+(vhdl-beautify-region (point-min) (point-max))
+
+(princ (buffer-string))

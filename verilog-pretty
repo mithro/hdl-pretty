@@ -6,9 +6,15 @@
 (setq args (cdr (cdr argv)))
 (setq argv nil)
 
-;(defun set-args arg
-; "Takes an arg of form --xxxx=blah and converts it to a '(setq xxx blah)'"
-;(mapc 'set-args args)
+(setq args (mapcar (lambda (arg)
+             (when (string-match "^--\\([^=]*\\)\\(?:=\\(.*\\)\\)?" arg)
+               (let ((opt (match-string 1 arg))
+                 (val (match-string 2 arg)))
+                 (if val
+                 (list opt val)
+                   (list opt)))))
+            args))
+(mapc (lambda (arg) (set (intern (car arg)) (if (cdr arg) (cdr arg) t))) args)
 
 (setq basedir (concat (file-name-directory arg0) "macs-verilog-mode"))
 (setq load-path (cons basedir load-path))

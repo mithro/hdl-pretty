@@ -1,5 +1,6 @@
 #! /bin/sh
 ":"; exec emacs --no-site-file --script "$0" -- "$0" "$@" # -*-emacs-lisp-*-
+; vim: noai:ts=4:sw=4:syntax=lisp
 
 (setq arg0 (file-truename (car (cdr argv))))
 (setq args (cdr (cdr argv)))

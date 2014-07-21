@@ -6,15 +6,33 @@
 (setq args (cdr (cdr argv)))
 (setq argv nil)
 
-(setq args (mapcar (lambda (arg)
-             (when (string-match "^--\\([^=]*\\)\\(?:=\\(.*\\)\\)?" arg)
-               (let ((opt (match-string 1 arg))
-                 (val (match-string 2 arg)))
-                 (if val
-                 (list opt val)
-                   (list opt)))))
-            args))
+; Parse the command line arguments,
+;  --xxx           -> ("xxx" t)
+;  --no-xxx        -> ("xxx" nil)
+;  --xxx=123       -> ("xxx" 123)
+;  --xxx=abc       -> ("xxx" "abc")
+;  --xxx='abc 123' -> ("xxx" "abc 123")
+;  --xxx=abc=123   -> ("xxx" "abc=123")
+(setq args 
+  (mapcar 
+    (lambda (arg)
+      (cond 
+        ((string-match "^--no-\\([^=]*\\)$" arg)
+          (list (match-string 1 arg) nil))
+        ((string-match "^--\\([^=]*\\)$" arg)
+          (list (match-string 1 arg) t))
+        ((string-match "^--\\([^=]*\\)=\\([\"']?\\)\\([0-9]+\\)\\2$" arg)
+          (list (match-string 1 arg) (string-to-number (match-string 3 arg))))
+        ((string-match "^--\\([^=]*\\)=\\([\"']?\\)\\(.+?\\)\\2$" arg)
+          (list (match-string 1 arg) (match-string 3 arg)))
+        (t nil)
+      ))
+    args))
+; Set the command line arguments to global values
+(print args)
 (mapc (lambda (arg) (set (intern (car arg)) (if (cdr arg) (cdr arg) t))) args)
+
+; customize-set-variable
 
 (setq basedir (concat (file-name-directory arg0) "vhdl-mode"))
 (setq load-path (cons basedir load-path))
@@ -31,6 +49,43 @@
 (goto-char (point-min))
 
 (load-library "vhdl-mode")
+
+(defun indent (str)
+  "indents a string"
+  (let ((bits (split-string str "\n")))
+     (mapconcat 
+       'identity 
+       (mapcar (lambda (b) (mapconcat 'identity (list "    " b "\n") "")) bits)
+     "")
+  ))
+
+(load-library "cus-edit")
+(mapc 
+  (lambda (group)
+    (mapc
+      (lambda (option)
+        (princ (format "  --%s\n%s\n" (car option) (indent (documentation-property (car option) 'variable-documentation)))))
+      group)
+  )
+  ; (get 'vhdl 'custom-group)
+  (list
+    (get 'vhdl-style 'custom-group)
+    (get 'vhdl-beautify 'custom-group)
+  )
+)
+
+;(mapc 
+;  (lambda (group)
+;    (princ (format "\n\n%s: %s %s\n" (car group) (custom-unlispify-tag-name (car group)) (get (car group) 'group-documentation)))
+;    (mapc
+;      (lambda (option)
+;        (princ (format "\n  --%s\n%s\n" (car option) (indent (documentation-property (car option) 'variable-documentation))))
+;      )
+;      (get (car group) 'custom-group)
+;    )
+;  )
+;)
+
 (vhdl-set-style "IEEE")
 (vhdl-mode)
 (vhdl-beautify-region (point-min) (point-max))

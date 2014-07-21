@@ -6,23 +6,34 @@
 (setq args (cdr (cdr argv)))
 (setq argv nil)
 
-(setq args (mapcar (lambda (arg)
-             (when (string-match "^--\\([^=]*\\)\\(?:=\\(.*\\)\\)?" arg)
-               (let ((opt (match-string 1 arg))
-                 (val (match-string 2 arg)))
-                 (if val
-                 (list opt val)
-                   (list opt)))))
-            args))
-(mapc (lambda (arg) (set (intern (car arg)) (if (cdr arg) (cdr arg) t))) args)
+; Parse the command line arguments,
+;  --xxx           -> ("xxx" t)
+;  --no-xxx        -> ("xxx" nil)
+;  --xxx=123       -> ("xxx" 123)
+;  --xxx=abc       -> ("xxx" "abc")
+;  --xxx='abc 123' -> ("xxx" "abc 123")
+;  --xxx=abc=123   -> ("xxx" "abc=123")
+(setq args
+  (mapcar
+    (lambda (arg)
+      (cond
+        ((string-match "^--no-\\([^=]*\\)$" arg)
+          (list (intern (match-string 1 arg)) nil))
+        ((string-match "^--\\([^=]*\\)$" arg)
+          (list (intern (match-string 1 arg)) t))
+        ((string-match "^--\\([^=]*\\)=\\([\"']?\\)\\([0-9]+\\)\\2$" arg)
+          (list (intern (match-string 1 arg)) (string-to-number (match-string 3 arg))))
+        ((string-match "^--\\([^=]*\\)=\\([\"']?\\)\\(.+?\\)\\2$" arg)
+          (list (intern (match-string 1 arg)) (match-string 3 arg)))
+        (t nil)
+      ))
+    args))
 
-(setq basedir (concat (file-name-directory arg0) "vhdl-mode"))
-(setq load-path (cons basedir load-path))
-
+; Read stdin into buffer
 (defun insert-standard-input ()
   "insert contents from standard input"
   (condition-case nil
-      (let (line) 
+      (let (line)
         (while (setq line (read-from-minibuffer ""))
           (insert line "\n")))
     (error nil)))
@@ -30,9 +41,20 @@
 (insert-standard-input)
 (goto-char (point-min))
 
+; Load library
+(setq basedir (concat (file-name-directory arg0) "vhdl-mode"))
+(setq load-path (cons basedir load-path))
 (load-library "vhdl-mode")
+
+; Default customisation
 (vhdl-set-style "IEEE")
+
+; Customisation from cmdline
+(mapc (lambda (arg) (customize-set-variable (car arg) (car (cdr arg)))) args)
+
+; Turn on mode and beautify
 (vhdl-mode)
 (vhdl-beautify-region (point-min) (point-max))
 
+; Output buffer to stdout
 (princ (buffer-string))

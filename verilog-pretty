@@ -47,7 +47,7 @@
 (load-library "verilog-mode")
 
 ; Default customisation
-(customize-set-variable verilog-date-scientific-format t)
+(setq verilog-date-scientific-format t)
 
 ; Customisation from cmdline
 (mapc (lambda (arg) (customize-set-variable (car arg) (car (cdr arg)))) args)

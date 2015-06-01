@@ -7,8 +7,10 @@ with GNU Emacs 23.3.1
 
 # Usage
 
+```sh
 ./verliog-pretty < ugly-verilog.v > pretty-verilog.v
 ./vhdl-pretty < ugly-vhdl.vhd > pretty-vhdl.vhd
+```
 
 # How it works
 
